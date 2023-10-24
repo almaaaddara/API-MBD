@@ -22,7 +22,6 @@ return function (App $app) {
 
         return $response->withHeader("Content-Type", "application/json");
     });
-
      // get untuk satu data, by id
      $app->get('/pabrik/{id}', function(Request $request, Response $response, $args) {
         $db = $this->get(PDO::class);
@@ -47,42 +46,42 @@ return function (App $app) {
     
         return $response->withHeader("Content-Type", "application/json");
     });
-
     // Post
     $app->post('/pabrik', function(Request $request, Response $response) {
-    $parsedBody = $request->getParsedBody();
-    
-    $idPabrik = $parsedBody['id_pabrik'];
-    $namaPabrik = $parsedBody['nama_pabrik'];
-    $alamatPabrik = $parsedBody['alamat'];
-
-    $db = $this->get(PDO::class);
-
-    try {
-        $query = $db->prepare('CALL TambahPabrik(?, ?, ?)');
-        $query->bindParam(1, $idPabrik, PDO::PARAM_INT);
-        $query->bindParam(2, $namaPabrik, PDO::PARAM_STR);
-        $query->bindParam(3, $alamatPabrik, PDO::PARAM_STR);
+        $parsedBody = $request->getParsedBody();
         
-        $query->execute();
+        $idPabrik = $parsedBody['id_pabrik'];
+        $namaPabrik = $parsedBody['nama_pabrik'];
+        $alamatPabrik = $parsedBody['alamat'];
+    
+        $db = $this->get(PDO::class);
+    
+        try {
+            $query = $db->prepare('CALL TambahPabrik(?, ?, ?)');
+            $query->bindParam(1, $idPabrik, PDO::PARAM_INT);
+            $query->bindParam(2, $namaPabrik, PDO::PARAM_STR);
+            $query->bindParam(3, $alamatPabrik, PDO::PARAM_STR);
+            
+            $query->execute();
+    
+            $response->getBody()->write(json_encode(
+                [
+                    'message' => 'Pabrik disimpan dengan id ' . $idPabrik
+                ]
+            ));
+        } catch (PDOException $e) {
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Gagal menyimpan pabrik: ' . $e->getMessage()
+                ]
+            ));
+        }
+    
+        return $response->withHeader("Content-Type", "application/json");
+        });
 
-        $response->getBody()->write(json_encode(
-            [
-                'message' => 'Pabrik disimpan dengan id ' . $idPabrik
-            ]
-        ));
-    } catch (PDOException $e) {
-        $response->getBody()->write(json_encode(
-            [
-                'error' => 'Gagal menyimpan pabrik: ' . $e->getMessage()
-            ]
-        ));
-    }
 
-    return $response->withHeader("Content-Type", "application/json");
-    });
-
-    // delete data
+    // Delete data pabrik
     $app->delete('/pabrik/{id}', function (Request $request, Response $response, $args) {
         $currentId = $args['id'];
         $db = $this->get(PDO::class);
@@ -148,7 +147,6 @@ return function (App $app) {
     });
 
     // Post (Tambahkan Produk)
-    // Post
     $app->post('/produk', function(Request $request, Response $response) {
         $parsedBody = $request->getParsedBody();
 
@@ -186,9 +184,48 @@ return function (App $app) {
         return $response->withHeader("Content-Type", "application/json");
     });
 
+    // Delete (Hapus Produk)
+    $app->delete('/produk/{id}', function (Request $request, Response $response, $args) {
+        $currentId = $args['id'];
+        $db = $this->get(PDO::class);
+    
+        try {
+            $query = $db->prepare('CALL HapusProduk(?)');
+            $query->bindParam(1, $currentId, PDO::PARAM_INT);
+            $query->execute();
+    
+            $response->getBody()->write(json_encode(
+                [
+                    'message' => 'Produk dengan ID ' . $currentId . ' telah dihapus dari database'
+                ]
+            ));
+        } catch (PDOException $e) {
+            $response = $response->withStatus(500);
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Database error: ' . $e->getMessage()
+                ]
+            ));
+        }
+    
+        return $response->withHeader("Content-Type", "application/json");
+    });
+    
+
 
 
     // Tabel Bahan Baku
+    // Get Bahan Baku
+    $app->get('/bahan_baku', function(Request $request, Response $response) {
+        $db = $this->get(PDO::class);
+
+        $query = $db->query("SELECT * FROM bahan_baku"); //query digunakan agar langsung execute
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        $response->getBody()->write(json_encode($result));
+
+        return $response->withHeader("Content-Type", "application/json");
+    });
+
      // get untuk satu data, by id
      $app->get('/bahan_baku/{id}', function(Request $request, Response $response, $args) {
         $db = $this->get(PDO::class);
@@ -214,8 +251,81 @@ return function (App $app) {
         return $response->withHeader("Content-Type", "application/json");
     });
 
+    // Post (Tambah Bahan Baku)
+    $app->post('/bahan_baku', function(Request $request, Response $response) {
+        $parsedBody = $request->getParsedBody();
+    
+        $idBahan = $parsedBody['id_bahan']; // Anda perlu mengambil id_bahan dari body permintaan
+        $namaBahan = $parsedBody['nama_bahan'];
+        $jumlahStok = $parsedBody['jumlah_stok'];
+    
+        $db = $this->get(PDO::class);
+    
+        try {
+            $query = $db->prepare('CALL TambahBahanBaku(?, ?, ?)');
+            $query->bindParam(1, $idBahan, PDO::PARAM_INT); // Bind id_bahan sebagai parameter pertama
+            $query->bindParam(2, $namaBahan, PDO::PARAM_STR);
+            $query->bindParam(3, $jumlahStok, PDO::PARAM_INT);
+    
+            $query->execute();
+    
+            $response->getBody()->write(json_encode(
+                [
+                    'message' => 'Bahan baku disimpan dengan id ' . $idBahan
+                ]
+            ));
+        } catch (PDOException $e) {
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Gagal menyimpan bahan baku: ' . $e->getMessage()
+                ]
+            ));
+        }
+    
+        return $response->withHeader("Content-Type", "application/json");
+    });
+
+    // Delete Bahan Baku
+    $app->delete('/bahan_baku/{id}', function (Request $request, Response $response, $args) {
+        $currentId = $args['id'];
+        $db = $this->get(PDO::class);
+    
+        try {
+            $query = $db->prepare('CALL HapusBahanBaku(?)');
+            $query->bindParam(1, $currentId, PDO::PARAM_INT);
+            $query->execute();
+    
+            $response->getBody()->write(json_encode(
+                [
+                    'message' => 'Bahan Baku dengan ID ' . $currentId . ' telah dihapus dari database'
+                ]
+            ));
+        } catch (PDOException $e) {
+            $response = $response->withStatus(500);
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Database error: ' . $e->getMessage()
+                ]
+            ));
+        }
+    
+        return $response->withHeader("Content-Type", "application/json");
+    });
+    
+
     // Tabel Proses Produksi
-     // get untuk satu data, by id
+    // Get All Proses Produksi
+    $app->get('/proses_produksi', function(Request $request, Response $response) {
+        $db = $this->get(PDO::class);
+
+        $query = $db->query("SELECT * FROM proses_produksi"); //query digunakan agar langsung execute
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        $response->getBody()->write(json_encode($result));
+
+        return $response->withHeader("Content-Type", "application/json");
+    });
+
+    // get untuk satu data, by id
      $app->get('/proses_produksi/{id}', function(Request $request, Response $response, $args) {
         $db = $this->get(PDO::class);
         $id = $args['id'];
@@ -239,6 +349,69 @@ return function (App $app) {
     
         return $response->withHeader("Content-Type", "application/json");
     });
+
+    // Post (Tambah data Proses Produksi)
+    $app->post('/proses_produksi', function(Request $request, Response $response) {
+        $parsedBody = $request->getParsedBody();
+    
+        $idProses = $parsedBody['id_proses'];
+        $idProduk = $parsedBody['id_produk'];
+        $namaProses = $parsedBody['nama_proses'];
+    
+        $db = $this->get(PDO::class);
+    
+        try {
+            $query = $db->prepare('CALL TambahProsesProduksi(?, ?, ?)');
+            $query->bindParam(1, $idProses, PDO::PARAM_INT);
+            $query->bindParam(2, $idProduk, PDO::PARAM_INT);
+            $query->bindParam(3, $namaProses, PDO::PARAM_STR);
+    
+            $query->execute();
+    
+            $response->getBody()->write(json_encode(
+                [
+                    'message' => 'Proses produksi disimpan dengan ID ' . $idProses
+                ]
+            ));
+        } catch (PDOException $e) {
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Gagal menyimpan proses produksi: ' . $e->getMessage()
+                ]
+            ));
+        }
+    
+        return $response->withHeader("Content-Type", "application/json");
+    });
+
+    // Delete Proses Produksi
+    $app->delete('/proses_produksi/{id}', function (Request $request, Response $response, $args) {
+        $currentId = $args['id'];
+        $db = $this->get(PDO::class);
+    
+        try {
+            $query = $db->prepare('CALL HapusProsesProduksi(?)');
+            $query->bindParam(1, $currentId, PDO::PARAM_INT);
+            $query->execute();
+    
+            $response->getBody()->write(json_encode(
+                [
+                    'message' => 'Proses produksi dengan ID ' . $currentId . ' telah dihapus dari database'
+                ]
+            ));
+        } catch (PDOException $e) {
+            $response = $response->withStatus(500);
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Database error: ' . $e->getMessage()
+                ]
+            ));
+        }
+    
+        return $response->withHeader("Content-Type", "application/json");
+    });
+    
+    
 
     // Tabel Detail Proses
      // get untuk satu data, by id
