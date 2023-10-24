@@ -111,7 +111,18 @@ return function (App $app) {
 
 
     // Tabel Produk
-     // get untuk satu data, by id
+    //get produk
+    $app->get('/produk', function(Request $request, Response $response) {
+        $db = $this->get(PDO::class);
+
+        $query = $db->query("SELECT * FROM produk"); //query digunakan agar langsung execute
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        $response->getBody()->write(json_encode($result));
+
+        return $response->withHeader("Content-Type", "application/json");
+    });
+
+     // get produk untuk satu data, by id
      $app->get('/produk/{id}', function(Request $request, Response $response, $args) {
         $db = $this->get(PDO::class);
         $id = $args['id'];
@@ -136,39 +147,46 @@ return function (App $app) {
         return $response->withHeader("Content-Type", "application/json");
     });
 
-    // Put Data(Update)
-    // PUT data (update)
-    $app->put('/pabrik/{id}', function(Request $request, Response $response, $args) {
+    // Post (Tambahkan Produk)
+    // Post
+    $app->post('/produk', function(Request $request, Response $response) {
         $parsedBody = $request->getParsedBody();
-        $currentId = $args['id'];
-        $newNamaPabrik = $parsedBody['nama_pabrik'];
-        $newAlamatPabrik = $parsedBody['alamat'];
+
+        $idProduk = $parsedBody['id_produk'];
+        $idPabrik = $parsedBody['id_pabrik'];
+        $namaProduk = $parsedBody['nama_produk'];
+        $harga = $parsedBody['harga'];
+        $jumlahStok = $parsedBody['jumlah_stok'];
 
         $db = $this->get(PDO::class);
 
         try {
-            $query = $db->prepare('CALL UpdatePabrik(?, ?, ?)');
-            $query->bindParam(1, $currentId, PDO::PARAM_INT);
-            $query->bindParam(2, $newNamaPabrik, PDO::PARAM_STR);
-            $query->bindParam(3, $newAlamatPabrik, PDO::PARAM_STR);
-            
+            $query = $db->prepare('CALL tambah_produk(?, ?, ?, ?, ?)');
+            $query->bindParam(1, $idProduk, PDO::PARAM_INT);
+            $query->bindParam(2, $idPabrik, PDO::PARAM_INT);
+            $query->bindParam(3, $namaProduk, PDO::PARAM_STR);
+            $query->bindParam(4, $harga, PDO::PARAM_INT);
+            $query->bindParam(5, $jumlahStok, PDO::PARAM_INT);
+
             $query->execute();
 
             $response->getBody()->write(json_encode(
                 [
-                    'message' => 'Pabrik dengan ID ' . $currentId . ' telah diperbarui dengan nama ' . $newNamaPabrik . ' dan alamat ' . $newAlamatPabrik
+                    'message' => 'Produk disimpan dengan id ' . $idProduk
                 ]
             ));
         } catch (PDOException $e) {
             $response->getBody()->write(json_encode(
                 [
-                    'error' => 'Gagal memperbarui pabrik: ' . $e->getMessage()
+                    'error' => 'Gagal menyimpan produk: ' . $e->getMessage()
                 ]
             ));
         }
 
         return $response->withHeader("Content-Type", "application/json");
     });
+
+
 
     // Tabel Bahan Baku
      // get untuk satu data, by id
