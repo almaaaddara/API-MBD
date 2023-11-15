@@ -13,15 +13,21 @@ return function (App $app) {
 
     // Tabel Pabrik
     //get
+    // get
     $app->get('/pabrik', function(Request $request, Response $response) {
         $db = $this->get(PDO::class);
 
-        $query = $db->query("SELECT * FROM pabrik"); //query digunakan agar langsung execute
-        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        // Memanggil procedure GetAllPabrik()
+        $stmt = $db->prepare("CALL GetAllPabrik()");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Mengembalikan hasil dalam format JSON
         $response->getBody()->write(json_encode($result));
 
         return $response->withHeader("Content-Type", "application/json");
     });
+
     // get untuk satu data, by id
      $app->get('/pabrik/{id}', function(Request $request, Response $response, $args) {
         $db = $this->get(PDO::class);
@@ -148,8 +154,12 @@ return function (App $app) {
     $app->get('/produk', function(Request $request, Response $response) {
         $db = $this->get(PDO::class);
 
-        $query = $db->query("SELECT * FROM produk"); //query digunakan agar langsung execute
-        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        // Memanggil procedure GetAllPabrik()
+        $stmt = $db->prepare("CALL GetAllProduk()");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Mengembalikan hasil dalam format JSON
         $response->getBody()->write(json_encode($result));
 
         return $response->withHeader("Content-Type", "application/json");
@@ -289,8 +299,12 @@ return function (App $app) {
     $app->get('/bahan_baku', function(Request $request, Response $response) {
         $db = $this->get(PDO::class);
 
-        $query = $db->query("SELECT * FROM bahan_baku"); //query digunakan agar langsung execute
-        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        // Memanggil procedure GetAllPabrik()
+        $stmt = $db->prepare("CALL GetAllBahanBaku()");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Mengembalikan hasil dalam format JSON
         $response->getBody()->write(json_encode($result));
 
         return $response->withHeader("Content-Type", "application/json");
@@ -422,8 +436,12 @@ return function (App $app) {
     $app->get('/proses_produksi', function(Request $request, Response $response) {
         $db = $this->get(PDO::class);
 
-        $query = $db->query("SELECT * FROM proses_produksi"); //query digunakan agar langsung execute
-        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        // Memanggil procedure GetAllPabrik()
+        $stmt = $db->prepare("CALL GetAllProsesProduksi()");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Mengembalikan hasil dalam format JSON
         $response->getBody()->write(json_encode($result));
 
         return $response->withHeader("Content-Type", "application/json");
@@ -556,8 +574,12 @@ return function (App $app) {
     $app->get('/detail_proses', function(Request $request, Response $response) {
         $db = $this->get(PDO::class);
 
-        $query = $db->query("SELECT * FROM detail_proses"); //query digunakan agar langsung execute
-        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        // Memanggil procedure GetAllPabrik()
+        $stmt = $db->prepare("CALL GetAllDetailProses()");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Mengembalikan hasil dalam format JSON
         $response->getBody()->write(json_encode($result));
 
         return $response->withHeader("Content-Type", "application/json");
