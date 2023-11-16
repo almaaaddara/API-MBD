@@ -18,14 +18,26 @@ return function (App $app) {
         $db = $this->get(PDO::class);
 
         // Memanggil procedure GetAllPabrik()
-        $stmt = $db->prepare("CALL GetAllPabrik()");
-        $stmt->execute();
-        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $db->prepare("CALL GetAllPabrik()");
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+            // Menutup statement setelah penggunaan
+            $stmt->closeCursor();
+    
+            if (empty($result)) {
+                $response->getBody()->write(json_encode(['error' => 'Data pabrik tidak ditemukan.']));
+                return $response->withStatus(404); // Atur status kode ke 404 Not Found atau sesuai kebutuhan
+            }
+    
+            $response->getBody()->write(json_encode($result));
+            return $response->withHeader("Content-Type", "application/json");
 
-        // Mengembalikan hasil dalam format JSON
-        $response->getBody()->write(json_encode($result));
-
-        return $response->withHeader("Content-Type", "application/json");
+        } catch (PDOException $e) {
+            $response->getBody()->write(json_encode(['error' => 'Gagal mengambil data pabrik: ' . $e->getMessage()]));
+            return $response->withStatus(500); // Atur status kode ke 500 Internal Server Error atau sesuai kebutuhan
+        }
     });
 
     // get untuk satu data, by id
@@ -55,37 +67,48 @@ return function (App $app) {
     // Post
     $app->post('/pabrik', function(Request $request, Response $response) {
         $parsedBody = $request->getParsedBody();
-        
+
+        // Memeriksa apakah semua data yang diperlukan diisi
+        if (empty($parsedBody['id_pabrik']) || empty($parsedBody['nama_pabrik']) || empty($parsedBody['alamat'])) {
+            $response = $response->withStatus(400); // Bad Request
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Harap mengisi seluruh data'
+                ]
+            ));
+            return $response->withHeader("Content-Type", "application/json");
+        }
+
         $idPabrik = $parsedBody['id_pabrik'];
         $namaPabrik = $parsedBody['nama_pabrik'];
         $alamatPabrik = $parsedBody['alamat'];
-    
+
         $db = $this->get(PDO::class);
-    
+
         try {
             $query = $db->prepare('CALL TambahPabrik(?, ?, ?)');
             $query->bindParam(1, $idPabrik, PDO::PARAM_INT);
             $query->bindParam(2, $namaPabrik, PDO::PARAM_STR);
             $query->bindParam(3, $alamatPabrik, PDO::PARAM_STR);
-            
+
             $query->execute();
-    
+
             $response->getBody()->write(json_encode(
                 [
                     'message' => 'Pabrik disimpan dengan id ' . $idPabrik
                 ]
             ));
         } catch (PDOException $e) {
+            $response = $response->withStatus(500); // Internal Server Error
             $response->getBody()->write(json_encode(
                 [
                     'error' => 'Gagal menyimpan pabrik: ' . $e->getMessage()
                 ]
             ));
         }
-    
-        return $response->withHeader("Content-Type", "application/json");
-        });
 
+        return $response->withHeader("Content-Type", "application/json");
+    });
 
     // Put Data Pabrik
     $app->put('/pabrik', function(Request $request, Response $response) {
@@ -193,15 +216,26 @@ return function (App $app) {
     // Post (Tambahkan Produk)
     $app->post('/produk', function(Request $request, Response $response) {
         $parsedBody = $request->getParsedBody();
-
+    
+        // Memeriksa apakah semua data yang diperlukan diisi
+        if (empty($parsedBody['id_produk']) || empty($parsedBody['id_pabrik']) || empty($parsedBody['nama_produk']) || empty($parsedBody['harga']) || empty($parsedBody['jumlah_stok'])) {
+            $response = $response->withStatus(400); // Bad Request
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Semua data harus diisi'
+                ]
+            ));
+            return $response->withHeader("Content-Type", "application/json");
+        }
+    
         $idProduk = $parsedBody['id_produk'];
         $idPabrik = $parsedBody['id_pabrik'];
         $namaProduk = $parsedBody['nama_produk'];
         $harga = $parsedBody['harga'];
         $jumlahStok = $parsedBody['jumlah_stok'];
-
+    
         $db = $this->get(PDO::class);
-
+    
         try {
             $query = $db->prepare('CALL TambahProduk(?, ?, ?, ?, ?)');
             $query->bindParam(1, $idProduk, PDO::PARAM_INT);
@@ -209,22 +243,23 @@ return function (App $app) {
             $query->bindParam(3, $namaProduk, PDO::PARAM_STR);
             $query->bindParam(4, $harga, PDO::PARAM_INT);
             $query->bindParam(5, $jumlahStok, PDO::PARAM_INT);
-
+    
             $query->execute();
-
+    
             $response->getBody()->write(json_encode(
                 [
                     'message' => 'Produk disimpan dengan id ' . $idProduk
                 ]
             ));
         } catch (PDOException $e) {
+            $response = $response->withStatus(500); // Internal Server Error
             $response->getBody()->write(json_encode(
                 [
                     'error' => 'Gagal menyimpan produk: ' . $e->getMessage()
                 ]
             ));
         }
-
+    
         return $response->withHeader("Content-Type", "application/json");
     });
 
@@ -339,7 +374,18 @@ return function (App $app) {
     $app->post('/bahan_baku', function(Request $request, Response $response) {
         $parsedBody = $request->getParsedBody();
     
-        $idBahan = $parsedBody['id_bahan']; // Anda perlu mengambil id_bahan dari body permintaan
+        // Memeriksa apakah semua data yang diperlukan diisi
+        if (empty($parsedBody['id_bahan']) || empty($parsedBody['nama_bahan']) || empty($parsedBody['jumlah_stok'])) {
+            $response = $response->withStatus(400); // Bad Request
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Semua data harus diisi'
+                ]
+            ));
+            return $response->withHeader("Content-Type", "application/json");
+        }
+    
+        $idBahan = $parsedBody['id_bahan'];
         $namaBahan = $parsedBody['nama_bahan'];
         $jumlahStok = $parsedBody['jumlah_stok'];
     
@@ -347,7 +393,7 @@ return function (App $app) {
     
         try {
             $query = $db->prepare('CALL TambahBahanBaku(?, ?, ?)');
-            $query->bindParam(1, $idBahan, PDO::PARAM_INT); // Bind id_bahan sebagai parameter pertama
+            $query->bindParam(1, $idBahan, PDO::PARAM_INT);
             $query->bindParam(2, $namaBahan, PDO::PARAM_STR);
             $query->bindParam(3, $jumlahStok, PDO::PARAM_INT);
     
@@ -359,6 +405,7 @@ return function (App $app) {
                 ]
             ));
         } catch (PDOException $e) {
+            $response = $response->withStatus(500); // Internal Server Error
             $response->getBody()->write(json_encode(
                 [
                     'error' => 'Gagal menyimpan bahan baku: ' . $e->getMessage()
@@ -368,6 +415,7 @@ return function (App $app) {
     
         return $response->withHeader("Content-Type", "application/json");
     });
+    
 
     // Put Bahan Baku
     $app->put('/bahan_baku', function(Request $request, Response $response) {
@@ -476,6 +524,17 @@ return function (App $app) {
     $app->post('/proses_produksi', function(Request $request, Response $response) {
         $parsedBody = $request->getParsedBody();
     
+        // Memeriksa apakah semua data yang diperlukan diisi
+        if (empty($parsedBody['id_proses']) || empty($parsedBody['id_produk']) || empty($parsedBody['nama_proses'])) {
+            $response = $response->withStatus(400); // Bad Request
+            $response->getBody()->write(json_encode(
+                [
+                    'error' => 'Semua data harus diisi'
+                ]
+            ));
+            return $response->withHeader("Content-Type", "application/json");
+        }
+    
         $idProses = $parsedBody['id_proses'];
         $idProduk = $parsedBody['id_produk'];
         $namaProses = $parsedBody['nama_proses'];
@@ -496,6 +555,7 @@ return function (App $app) {
                 ]
             ));
         } catch (PDOException $e) {
+            $response = $response->withStatus(500); // Internal Server Error
             $response->getBody()->write(json_encode(
                 [
                     'error' => 'Gagal menyimpan proses produksi: ' . $e->getMessage()
@@ -505,6 +565,7 @@ return function (App $app) {
     
         return $response->withHeader("Content-Type", "application/json");
     });
+    
 
     // Put Proses Produksi
     $app->put('/proses_produksi', function(Request $request, Response $response) {
